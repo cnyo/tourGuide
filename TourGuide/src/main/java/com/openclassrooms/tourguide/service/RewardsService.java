@@ -1,7 +1,11 @@
 package com.openclassrooms.tourguide.service;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import gpsUtil.GpsUtil;
@@ -15,6 +19,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 @Service
 public class RewardsService {
     private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
+	private static final Logger log = LoggerFactory.getLogger(RewardsService.class);
 
 	// proximity in miles
     private int defaultProximityBuffer = 10;
@@ -22,7 +27,8 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
-	
+	private CopyOnWriteArrayList<UserReward> copyUserRewards = new CopyOnWriteArrayList<>();
+
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
@@ -35,20 +41,33 @@ public class RewardsService {
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
-	
-	public void calculateRewards(User user) {
-		List<VisitedLocation> userLocations = user.getVisitedLocations();
+
+	public synchronized void calculateRewards(User user) {
+		log.info("Calculating rewards for user: {}", user.getUserName());
+		// Mise à jour dans le run du tracker
+		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
-		
-		for(VisitedLocation visitedLocation : userLocations) {
-			for(Attraction attraction : attractions) {
-				if(user.getUserRewards().stream().filter(r -> r.attraction.attractionName.equals(attraction.attractionName)).count() == 0) {
-					if(nearAttraction(visitedLocation, attraction)) {
-						user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
-					}
-				}
-			}
-		}
+		List<String> visitedAttractionNameRewards = getAttractionNamesFromUserRewards(user);
+
+        for (VisitedLocation visitedLocation : userLocations) {
+            for (Attraction attraction : attractions) {
+				boolean hasAttractionRewards = visitedAttractionNameRewards.contains(attraction.attractionName);
+                if (!hasAttractionRewards && nearAttraction(visitedLocation, attraction)) {
+					user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+                }
+            }
+        }
+
+		log.info("UserRewards size: {}", user.getUserRewards().size());
+	}
+
+	public List<String> getAttractionNamesFromUserRewards(User user) {
+		log.info("mapping user rewards to attraction names");
+		List<UserReward> userRewards = user.getUserRewards();
+
+		return userRewards.stream().
+				map(userReward -> userReward.attraction.attractionName)
+				.collect(Collectors.toList());
 	}
 	
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
