@@ -1,8 +1,9 @@
 package com.openclassrooms.tourguide.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import com.openclassrooms.tourguide.model.AttractionDistanceFromUser;
@@ -50,16 +51,42 @@ public class RewardsService {
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		List<String> visitedAttractionNameRewards = getAttractionNamesFromUserRewards(user);
+		List<UserReward> rewardsToAdd = Collections.synchronizedList(new ArrayList<>());
+
+		// Use a thread pool to parallelize the reward calculation
+		int processors = Runtime.getRuntime().availableProcessors();
+		ExecutorService executor = Executors.newFixedThreadPool(processors);
 
         for (VisitedLocation visitedLocation : userLocations) {
             for (Attraction attraction : attractions) {
 				boolean hasAttractionRewards = visitedAttractionNameRewards.contains(attraction.attractionName);
                 if (!hasAttractionRewards && nearAttraction(visitedLocation, attraction)) {
-					// Todo: Une tâche asynchrone pour exécuter addUserReward
-					user.addUserReward(new UserReward(visitedLocation, attraction, getRewardPoints(attraction, user)));
+					// Submit a task to the executor for reward calculation
+					executor.submit(() -> {
+						int rewardPoints = getRewardPoints(attraction, user);
+						rewardsToAdd.add(new UserReward(visitedLocation, attraction, rewardPoints));
+					});
                 }
             }
         }
+
+		// Wait for all tasks to complete
+		executor.shutdown();
+
+		// Optional: Use awaitTermination to ensure all tasks are completed before proceeding
+		try {
+			// Wait for the executor to terminate, with a timeout to avoid indefinite blocking
+			if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+				logger.warn("Executor did not terminate in the specified time.");
+			}
+		} catch (InterruptedException e) {
+			logger.error("Executor was interrupted while waiting for tasks to complete.", e);
+			Thread.currentThread().interrupt(); // Restore interrupted status
+		}
+
+		// Add all rewards to the user
+		logger.info("Adding {} rewards to user: {}", rewardsToAdd.size(), user.getUserName());
+		rewardsToAdd.forEach(user::addUserReward);
 
 		logger.info("UserRewards size: {}", user.getUserRewards().size());
 	}
