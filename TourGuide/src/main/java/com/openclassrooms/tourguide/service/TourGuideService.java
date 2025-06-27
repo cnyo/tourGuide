@@ -9,6 +9,10 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -80,6 +84,29 @@ public class TourGuideService {
 				user.getUserPreferences().getTripDuration(), cumulatativeRewardPoints);
 		user.setTripDeals(providers);
 		return providers;
+	}
+
+	public void trackUsersLocation(List<User> users) {
+		try {
+			// Todo: 2 executor, déplacer ailleurs ?
+			ExecutorService executor = Executors.newFixedThreadPool(500);
+
+			List<Future<VisitedLocation>> futures = users.stream()
+					.map(user -> executor.submit(() -> trackUserLocation(user)))
+					.toList();
+
+			futures.forEach(future -> {
+				try {
+					future.get();
+				} catch (InterruptedException | ExecutionException e) {
+					logger.error("Error InterruptedException | ExecutionException tracking user location: {}", e.getMessage());
+				}
+			});
+
+			executor.shutdown();
+		} catch (Exception e) {
+			logger.error("Error tracking user location: {}", e.getMessage());
+		}
 	}
 
 	public VisitedLocation trackUserLocation(User user) {

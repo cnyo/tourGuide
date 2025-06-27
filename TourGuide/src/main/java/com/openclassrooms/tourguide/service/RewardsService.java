@@ -30,10 +30,12 @@ public class RewardsService {
 	private int attractionProximityRange = 200;
 	private final GpsUtil gpsUtil;
 	private final RewardCentral rewardsCentral;
+	private final ExecutorService executor;
 
 	public RewardsService(GpsUtil gpsUtil, RewardCentral rewardCentral) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsCentral = rewardCentral;
+		this.executor = Executors.newFixedThreadPool(100); // Ajuster le nombre de threads selon les besoins
 	}
 	
 	public void setProximityBuffer(int proximityBuffer) {
@@ -44,44 +46,35 @@ public class RewardsService {
 		proximityBuffer = defaultProximityBuffer;
 	}
 
-	public void calculateRewards(User user) {
+	public void shutdownExecutor() {
+		executor.shutdown();
+	}
+
+	public CompletableFuture<Void> calculateRewards(User user) {
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		List<String> visitedAttractionNameRewards = getAttractionNamesFromUserRewards(user);
 
-		List<CompletableFuture<List<UserReward>>> futures = new ArrayList<>();
+		List<CompletableFuture<Void>> futures = new ArrayList<>();
 
 		for (VisitedLocation visitedLocation : userLocations) {
-			for (Attraction attraction : attractions) {
-				CompletableFuture<List<UserReward>> future = CompletableFuture.supplyAsync(() -> {
-					List<UserReward> rewards = new ArrayList<>();
-
-					boolean hasAttractionRewards = visitedAttractionNameRewards.contains(attraction.attractionName);
-					if (!hasAttractionRewards && nearAttraction(visitedLocation, attraction)) {
+			CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+				for (Attraction attraction : attractions) {
+					boolean isRewarded = visitedAttractionNameRewards.contains(attraction.attractionName);
+					if (!isRewarded && nearAttraction(visitedLocation, attraction)) {
 						int rewardPoints = getRewardPoints(attraction, user);
-						rewards.add(new UserReward(visitedLocation, attraction, rewardPoints));
+						user.addUserReward(new UserReward(visitedLocation, attraction, rewardPoints));
 					}
-
-					return rewards;
-				});
-
-				futures.add(future);
-			}
+				}
+			}, executor);
+			futures.add(future);
 		}
 
-		futures.forEach((future) -> {
-			try {
-				List<UserReward> rewardsToAdd = future.get();
-				rewardsToAdd.forEach(user::addUserReward);
-			} catch (InterruptedException | ExecutionException e) {
-				logger.error("Error calculating rewards for user: {}", user.getUserName(), e);
-				e.printStackTrace(); // à améliorer dans un vrai projet
-			}
-		});
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
 
 	public List<String> getAttractionNamesFromUserRewards(User user) {
-		logger.info("mapping user rewards to attraction names");
+		logger.debug("mapping user rewards to attraction names");
 		List<UserReward> userRewards = user.getUserRewards();
 
 		return userRewards.stream().
@@ -130,5 +123,13 @@ public class RewardsService {
 				sorted(AttractionDistanceFromUser.comparingByDistance()).
 				limit(NEAR_ATTRACTION_LIMIT).// Limit to the closest 5 attractions
 				toList();
+	}
+
+	public void calculateRewardsForUsers(List<User> users) {
+		List<CompletableFuture<Void>> futures = users.stream()
+				.map(this::calculateRewards)
+				.toList();
+		CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+		shutdownExecutor();
 	}
 }
