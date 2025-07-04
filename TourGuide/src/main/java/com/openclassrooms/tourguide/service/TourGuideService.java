@@ -9,10 +9,7 @@ import com.openclassrooms.tourguide.user.UserReward;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -36,11 +33,13 @@ public class TourGuideService {
 	private final TripPricer tripPricer = new TripPricer();
 	public final Tracker tracker;
 	boolean testMode = true;
+	private final ExecutorService executor;
 
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
 		this.gpsUtil = gpsUtil;
 		this.rewardsService = rewardsService;
-		
+		int nThreads = Runtime.getRuntime().availableProcessors();
+		this.executor = Executors.newFixedThreadPool(nThreads * 4);
 		Locale.setDefault(Locale.US);
 
 		if (testMode) {
@@ -58,9 +57,13 @@ public class TourGuideService {
 	}
 
 	public VisitedLocation getUserLocation(User user) {
-		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
-				: trackUserLocation(user);
-		return visitedLocation;
+		try	{
+            return (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
+                    : trackUserLocationAsync(user).get();
+		} catch(InterruptedException | ExecutionException e) {
+			logger.error("Error getting user location for user: {}", user.getUserName(), e);
+			return null;
+		}
 	}
 
 	public User getUser(String userName) {
@@ -86,34 +89,19 @@ public class TourGuideService {
 		return providers;
 	}
 
-	public void trackUsersLocation(List<User> users) {
-		try {
-			// Todo: 2 executor, déplacer ailleurs ?
-			ExecutorService executor = Executors.newFixedThreadPool(500);
-
-			List<Future<VisitedLocation>> futures = users.stream()
-					.map(user -> executor.submit(() -> trackUserLocation(user)))
-					.toList();
-
-			futures.forEach(future -> {
-				try {
-					future.get();
-				} catch (InterruptedException | ExecutionException e) {
-					logger.error("Error InterruptedException | ExecutionException tracking user location: {}", e.getMessage());
-				}
-			});
-
-			executor.shutdown();
-		} catch (Exception e) {
-			logger.error("Error tracking user location: {}", e.getMessage());
-		}
-	}
-
-	public VisitedLocation trackUserLocation(User user) {
-		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-		user.addToVisitedLocations(visitedLocation);
-		rewardsService.calculateRewards(user);
-		return visitedLocation;
+	public CompletableFuture<VisitedLocation> trackUserLocationAsync(User user) {
+				return CompletableFuture
+				.supplyAsync(() -> {
+					VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+					user.addToVisitedLocations(visitedLocation);
+					rewardsService.calculateRewards(user).join();
+					logger.info("User {} location tracked: {}", user.getUserName(), visitedLocation);
+					return visitedLocation;
+				}, executor)
+				.exceptionally((it) -> {
+					logger.info("Error tracking user location for user: {}", user.getUserName(), it);
+					return null;
+				});
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {

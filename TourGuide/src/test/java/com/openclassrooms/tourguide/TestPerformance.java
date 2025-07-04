@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
@@ -48,7 +49,7 @@ public class TestPerformance {
 
 	@Disabled
 	@ParameterizedTest
-	@ValueSource(ints = {100, 1000, 5000, 10000, 50000, 100000})
+	@ValueSource(ints = { 100, 1000, 5000, 10000, 50000, 100000 })
 	public void highVolumeTrackLocation(int userCount) {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
@@ -62,7 +63,16 @@ public class TestPerformance {
 
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
-		tourGuideService.trackUsersLocation(allUsers);
+
+		List<CompletableFuture<VisitedLocation>> trackerFutures = new ArrayList<>();
+		for (User user : allUsers) {
+			CompletableFuture<VisitedLocation> trackerFuture = tourGuideService.trackUserLocationAsync(user);
+			trackerFutures.add(trackerFuture);
+		}
+		CompletableFuture<Void> allDone = CompletableFuture.allOf(trackerFutures.toArray(new CompletableFuture[0]));
+		allDone.thenRun(() -> System.out.println("All done"));
+		allDone.join(); // Wait for all tracking to complete
+
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
 
@@ -73,14 +83,14 @@ public class TestPerformance {
 
 	@Disabled
 	@ParameterizedTest
-	@ValueSource(ints = {100, 1000, 5000, 10000, 50000, 100000})
-	public void highVolumeGetRewards() {
+	@ValueSource(ints = { 100, 1000, 5000, 10000, 50000, 100000 })
+	public void highVolumeGetRewards(int userCount) {
 		GpsUtil gpsUtil = new GpsUtil();
 		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
 
 		// Users should be incremented up to 100,000, and test finishes within 20
 		// minutes
-		InternalTestHelper.setInternalUserNumber(100);
+		InternalTestHelper.setInternalUserNumber(userCount);
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
@@ -90,10 +100,14 @@ public class TestPerformance {
 		allUsers = tourGuideService.getAllUsers();
 		allUsers.forEach(u -> u.addToVisitedLocations(new VisitedLocation(u.getUserId(), attraction, new Date())));
 
-		rewardsService.calculateRewardsForUsers(allUsers);
+		List<CompletableFuture<Void>> rewardsFutures = new ArrayList<>();
+		 allUsers.forEach(user -> {
+			 CompletableFuture<Void> rewardsFuture = rewardsService.calculateRewards(user);
+			 rewardsFutures.add(rewardsFuture);
+		 });
+		CompletableFuture.allOf(rewardsFutures.toArray(new CompletableFuture[0])).join();
 
 		for (User user : allUsers) {
-			System.out.println("Nombre de rewards " + user.getUserRewards().size());
 			assertTrue(user.getUserRewards().size() > 0);
 		}
 		stopWatch.stop();
