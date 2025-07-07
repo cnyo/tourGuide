@@ -40,10 +40,10 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file TourGuide/pom.xml
 
-    - name: Launch tests
-      run: mvn test --file TourGuide/pom.xml
+    - name: Run the Maven verify phase
+      run: mvn --batch-mode --update-snapshots verify
 
-    - run: mkdir staging && cp TourGuide/target/*.jar staging
+    - run: mkdir ./staging && cp TourGuide/target/*.jar ./staging
     - uses: actions/upload-artifact@v4
       with:
         name: Package
