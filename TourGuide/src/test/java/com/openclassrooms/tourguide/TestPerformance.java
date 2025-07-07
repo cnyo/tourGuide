@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
-import org.junit.jupiter.api.Disabled;
 
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
@@ -47,7 +46,6 @@ public class TestPerformance {
 	 * TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	 */
 
-	@Disabled
 	@ParameterizedTest
 	@ValueSource(ints = { 100, 1000, 5000, 10000, 50000, 100000 })
 	public void highVolumeTrackLocation(int userCount) {
@@ -71,7 +69,7 @@ public class TestPerformance {
 		}
 		CompletableFuture<Void> allDone = CompletableFuture.allOf(trackerFutures.toArray(new CompletableFuture[0]));
 		allDone.thenRun(() -> System.out.println("All done"));
-		allDone.join(); // Wait for all tracking to complete
+		allDone.join();
 
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
@@ -81,7 +79,6 @@ public class TestPerformance {
 		assertTrue(TimeUnit.MINUTES.toSeconds(15) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
 	}
 
-	@Disabled
 	@ParameterizedTest
 	@ValueSource(ints = { 100, 1000, 5000, 10000, 50000, 100000 })
 	public void highVolumeGetRewards(int userCount) {
@@ -105,6 +102,7 @@ public class TestPerformance {
 			 CompletableFuture<Void> rewardsFuture = rewardsService.calculateRewards(user);
 			 rewardsFutures.add(rewardsFuture);
 		 });
+		// Wait for all tracking to complete
 		CompletableFuture.allOf(rewardsFutures.toArray(new CompletableFuture[0])).join();
 
 		for (User user : allUsers) {

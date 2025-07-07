@@ -95,7 +95,6 @@ public class TourGuideService {
 					VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 					user.addToVisitedLocations(visitedLocation);
 					rewardsService.calculateRewards(user).join();
-					logger.info("User {} location tracked: {}", user.getUserName(), visitedLocation);
 					return visitedLocation;
 				}, executor)
 				.exceptionally((it) -> {
