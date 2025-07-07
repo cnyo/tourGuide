@@ -41,7 +41,7 @@ jobs:
       run: mvn -B package --file TourGuide/pom.xml
 
     - name: Run the Maven verify phase
-      run: mvn --batch-mode --update-snapshots verify
+      run: mvn --batch-mode --update-snapshots verify --file TourGuide/pom.xml
 
     - run: mkdir TourGuide/staging && cp TourGuide/target/*.jar staging
     - uses: actions/upload-artifact@v4
