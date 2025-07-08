@@ -84,7 +84,6 @@ public class RewardsService {
 	 * @return a list of attraction names associated with the user's rewards
 	 */
 	public List<String> getAttractionNamesFromUserRewards(User user) {
-		logger.debug("mapping user rewards to attraction names");
 		List<UserReward> userRewards = user.getUserRewards();
 
 		return userRewards.stream().
