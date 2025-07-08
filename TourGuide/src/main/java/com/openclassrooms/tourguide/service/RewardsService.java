@@ -47,6 +47,13 @@ public class RewardsService {
 		proximityBuffer = defaultProximityBuffer;
 	}
 
+	/**
+	 * Calculates rewards for a user based on their visited locations and the
+	 * attractions they have not been rewarded for yet.
+	 *
+	 * @param user the user for whom to calculate rewards
+	 * @return a CompletableFuture that completes when all rewards have been calculated
+	 */
 	public CompletableFuture<Void> calculateRewards(User user) {
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
@@ -70,6 +77,12 @@ public class RewardsService {
 		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 	}
 
+	/**
+	 * Retrieves the names of attractions from the user's rewards.
+	 *
+	 * @param user the user whose rewards are to be mapped to attraction names
+	 * @return a list of attraction names associated with the user's rewards
+	 */
 	public List<String> getAttractionNamesFromUserRewards(User user) {
 		logger.debug("mapping user rewards to attraction names");
 		List<UserReward> userRewards = user.getUserRewards();
@@ -105,6 +118,13 @@ public class RewardsService {
         return statuteMiles;
 	}
 
+	/**
+	 * Retrieves a list of attractions sorted by their distance from the user's
+	 * visited location.
+	 *
+	 * @param visitedLocation the location where the user has been
+	 * @return a list of AttractionDistanceFromUser objects, sorted by distance
+	 */
 	public List<AttractionDistanceFromUser> getAttractionDistancesFromUser(VisitedLocation visitedLocation) {
 		if (visitedLocation == null || visitedLocation.location == null) {
 			logger.error("VisitedLocation or its location is null, cannot calculate distances.");
@@ -116,9 +136,9 @@ public class RewardsService {
 				map(attraction -> new AttractionDistanceFromUser(
 						attraction,
 						getDistance(attraction, visitedLocation.location)
-				)).
-				sorted(AttractionDistanceFromUser.comparingByDistance()).
-				limit(NEAR_ATTRACTION_LIMIT).// Limit to the closest 5 attractions
-				toList();
+				))
+				.sorted(AttractionDistanceFromUser.comparingByDistance())
+				.limit(NEAR_ATTRACTION_LIMIT)// Limit to the closest 5 attractions
+				.toList();
 	}
 }

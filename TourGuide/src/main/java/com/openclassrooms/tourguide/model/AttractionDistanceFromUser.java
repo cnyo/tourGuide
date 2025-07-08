@@ -4,6 +4,10 @@ import gpsUtil.location.Attraction;
 
 import java.util.Comparator;
 
+/**
+ * AttractionDistanceFromUser represents an attraction along with the distance from the user.
+ * It is used to store and compare distances of attractions from a user's current location.
+ */
 public class AttractionDistanceFromUser {
     private Attraction attraction;
     private double distance;

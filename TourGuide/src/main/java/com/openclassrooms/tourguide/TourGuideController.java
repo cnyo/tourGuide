@@ -19,6 +19,11 @@ import com.openclassrooms.tourguide.user.UserReward;
 
 import tripPricer.Provider;
 
+/**
+ * TourGuideController provides endpoints for interacting with the Tour Guide
+ * service, allowing users to retrieve their location, nearby attractions,
+ * rewards, and trip deals.
+ */
 @RestController
 public class TourGuideController {
 

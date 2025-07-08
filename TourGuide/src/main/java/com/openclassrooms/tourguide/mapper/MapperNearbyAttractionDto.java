@@ -11,6 +11,10 @@ import rewardCentral.RewardCentral;
 
 import java.util.List;
 
+/**
+ * MapperNearbyAttractionDto is responsible for mapping AttractionDistanceFromUser
+ * objects to NearbyAttractionDto objects, which contain details about nearby attractions.
+ */
 @Component
 public class MapperNearbyAttractionDto {
 
@@ -21,6 +25,14 @@ public class MapperNearbyAttractionDto {
         this.rewardsCentral = rewardsCentral;
     }
 
+    /**
+     * Maps a list of AttractionDistanceFromUser to a list of NearbyAttractionDto.
+     *
+     * @param attractionDistances the list of AttractionDistanceFromUser to map
+     * @param visitedLocation the VisitedLocation of the user
+     * @param user the User for whom the attractions are being mapped
+     * @return a list of NearbyAttractionDto containing details about nearby attractions
+     */
     public List<NearbyAttractionDto> mapAttractionsToNearAttractionsDto(List<AttractionDistanceFromUser> attractionDistances, VisitedLocation visitedLocation, User user) {
         log.info("Mapping {} attractions to NearbyAttractionDto", attractionDistances.size());
         return attractionDistances.stream().
