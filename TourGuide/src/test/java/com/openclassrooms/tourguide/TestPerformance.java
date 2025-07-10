@@ -13,10 +13,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import gpsUtil.GpsUtil;
 import gpsUtil.location.Attraction;
 import gpsUtil.location.VisitedLocation;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.helper.InternalTestHelper;
 import com.openclassrooms.tourguide.service.RewardsService;
@@ -25,8 +22,6 @@ import com.openclassrooms.tourguide.user.User;
 
 public class TestPerformance {
 
-	private final Integer MINUTE_15 = 900; // 15 minutes in seconds
-	private final Integer MINUTE_20 = 1200; // 20 minutes in seconds
 	/*
 	 * A note on performance improvements:
 	 * 
@@ -77,8 +72,6 @@ public class TestPerformance {
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
 
-		assertTrue(stopWatch.getTime() < MINUTE_15);
-
 		System.out.println("highVolumeTrackLocation for " + allUsers.size() + " users: Time Elapsed: "
 				+ TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()) + " seconds.");
 		assertTrue(TimeUnit.MINUTES.toSeconds(15) >= TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime()));
@@ -114,8 +107,6 @@ public class TestPerformance {
 		}
 		stopWatch.stop();
 		tourGuideService.tracker.stopTracking();
-
-		assertTrue(stopWatch.getTime() < MINUTE_20);
 
 		System.out.println("highVolumeGetRewards for " + allUsers.size() + " users: Time Elapsed: " + TimeUnit.MILLISECONDS.toSeconds(stopWatch.getTime())
 				+ " seconds.");
