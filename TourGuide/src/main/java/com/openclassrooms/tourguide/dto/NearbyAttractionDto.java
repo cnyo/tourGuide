@@ -1,5 +1,10 @@
 package com.openclassrooms.tourguide.dto;
 
+/**
+ * NearbyAttractionDto represents an attraction that is near a user.
+ * It contains details such as the name, coordinates, distance from the user,
+ * and reward points associated with the attraction.
+ */
 public class NearbyAttractionDto {
     private String name;
     private Double latitude;

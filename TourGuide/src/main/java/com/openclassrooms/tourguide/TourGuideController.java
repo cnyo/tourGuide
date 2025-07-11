@@ -40,7 +40,12 @@ public class TourGuideController {
     public String index() {
         return "Greetings from TourGuide!";
     }
-    
+
+    /** * Get the current location of a user.
+     *
+     * @param userName the name of the user
+     * @return the VisitedLocation object containing the user's current location
+     */
     @RequestMapping("/getLocation") 
     public VisitedLocation getLocation(@RequestParam String userName) {
     	return tourGuideService.getUserLocation(getUser(userName));
@@ -60,20 +65,34 @@ public class TourGuideController {
 
         return mapperNearbyAttractionDto.mapAttractionsToNearAttractionsDto(attractionDistancesFromUser, visitedLocation, user);
     }
-    
+
+    /** * Get rewards for a user.
+     *
+     * @param userName the name of the user
+     * @return a list of UserReward objects containing the user's rewards
+     */
     @RequestMapping("/getRewards") 
     public List<UserReward> getRewards(@RequestParam String userName) {
     	return tourGuideService.getUserRewards(getUser(userName));
     }
-       
+
+    /** * Get trip deals for a user.
+     *
+     * @param userName the name of the user
+     * @return a list of Provider objects containing trip deals for the user
+     */
     @RequestMapping("/getTripDeals")
     public List<Provider> getTripDeals(@RequestParam String userName) {
     	return tourGuideService.getTripDeals(getUser(userName));
     }
-    
+
+    /** * Get a user by their username.
+     *
+     * @param userName the name of the user
+     * @return the User object corresponding to the given username
+     */
     private User getUser(String userName) {
     	return tourGuideService.getUser(userName);
     }
-   
 
 }

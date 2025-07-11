@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
+import com.openclassrooms.tourguide.model.AttractionDistanceFromUser;
 import org.junit.jupiter.api.Test;
 
 import gpsUtil.GpsUtil;
@@ -61,6 +62,23 @@ public class TestRewardsService {
 		tourGuideService.tracker.stopTracking();
 
 		assertEquals(gpsUtil.getAttractions().size(), userRewards.size());
+	}
+
+	@Test
+	public void getAttractionDistancesFromUser() throws ExecutionException, InterruptedException {
+		GpsUtil gpsUtil = new GpsUtil();
+		RewardsService rewardsService = new RewardsService(gpsUtil, new RewardCentral());
+		rewardsService.setProximityBuffer(Integer.MAX_VALUE);
+
+		InternalTestHelper.setInternalUserNumber(1);
+		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
+
+		User user = tourGuideService.getAllUsers().get(0);
+		VisitedLocation visitedLocation = tourGuideService.getUserLocation(user);
+		rewardsService.calculateRewards(user).get();
+		List<AttractionDistanceFromUser> attractionDistanceFromUser = rewardsService.getAttractionDistancesFromUser(visitedLocation);
+
+		assertEquals(5, attractionDistanceFromUser.size());
 	}
 
 }

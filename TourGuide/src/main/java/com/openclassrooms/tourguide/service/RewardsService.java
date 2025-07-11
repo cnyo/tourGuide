@@ -18,6 +18,12 @@ import rewardCentral.RewardCentral;
 import com.openclassrooms.tourguide.user.User;
 import com.openclassrooms.tourguide.user.UserReward;
 
+/**
+ * RewardsService is responsible for calculating rewards for users based on their
+ * visited locations and the attractions they have not been rewarded for yet.
+ * It also provides methods to calculate distances from user locations to
+ * attractions and manage proximity settings.
+ */
 @Service
 public class RewardsService {
     private static final double STATUTE_MILES_PER_NAUTICAL_MILE = 1.15077945;
@@ -38,11 +44,21 @@ public class RewardsService {
 		int nThreads = Runtime.getRuntime().availableProcessors();
 		this.executor = Executors.newFixedThreadPool(nThreads * 4);
 	}
-	
+
+	/**
+	 * Sets the proximity buffer for calculating rewards.
+	 *
+	 * @param proximityBuffer the new proximity buffer in miles
+	 */
 	public void setProximityBuffer(int proximityBuffer) {
 		this.proximityBuffer = proximityBuffer;
 	}
-	
+
+	/**
+	 * Gets the current proximity buffer.
+	 *
+	 * @return the current proximity buffer in miles
+	 */
 	public void setDefaultProximityBuffer() {
 		proximityBuffer = defaultProximityBuffer;
 	}
@@ -90,19 +106,49 @@ public class RewardsService {
 				map(userReward -> userReward.attraction.attractionName)
 				.collect(Collectors.toList());
 	}
-	
+
+	/**
+	 * Checks if a given attraction is within the proximity range of a user's
+	 * visited location.
+	 *
+	 * @param attraction the attraction to check
+	 * @param location   the user's current location
+	 * @return true if the attraction is within proximity, false otherwise
+	 */
 	public boolean isWithinAttractionProximity(Attraction attraction, Location location) {
 		return getDistance(attraction, location) > attractionProximityRange ? false : true;
 	}
-	
+
+	/**
+	 * Calculates the distance between an attraction and a user's visited location.
+	 *
+	 * @param attraction the attraction to calculate the distance to
+	 * @param visitedLocation   the user's visited location
+	 * @return the distance in miles between the attraction and the user's location
+	 */
 	private boolean nearAttraction(VisitedLocation visitedLocation, Attraction attraction) {
 		return getDistance(attraction, visitedLocation.location) > proximityBuffer ? false : true;
 	}
-	
+
+	/**
+	 * Calculates and returns the number of reward points for a given user
+	 * based on the specified attraction.
+	 *
+	 * @param attraction the attraction for which to calculate reward points
+	 * @param user the user for whom to calculate reward points
+	 * @return the number of reward points awarded to the user for this attraction
+	 */
 	private int getRewardPoints(Attraction attraction, User user) {
 		return rewardsCentral.getAttractionRewardPoints(attraction.attractionId, user.getUserId());
 	}
-	
+
+	/**
+	 * Calculates the distance between two locations using the Haversine formula.
+	 *
+	 * @param loc1 the first location
+	 * @param loc2 the second location
+	 * @return the distance in statute miles between the two locations
+	 */
 	public double getDistance(Location loc1, Location loc2) {
         double lat1 = Math.toRadians(loc1.latitude);
         double lon1 = Math.toRadians(loc1.longitude);
@@ -137,7 +183,7 @@ public class RewardsService {
 						getDistance(attraction, visitedLocation.location)
 				))
 				.sorted(AttractionDistanceFromUser.comparingByDistance())
-				.limit(NEAR_ATTRACTION_LIMIT)// Limit to the closest 5 attractions
+				.limit(NEAR_ATTRACTION_LIMIT) // Limit to the closest 5 attractions
 				.toList();
 	}
 }

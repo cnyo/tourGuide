@@ -25,6 +25,10 @@ import gpsUtil.location.VisitedLocation;
 import tripPricer.Provider;
 import tripPricer.TripPricer;
 
+/**
+ * TourGuideService provides methods to manage users, track their locations,
+ * calculate rewards, and retrieve trip deals.
+ */
 @Service
 public class TourGuideService {
 	private Logger logger = LoggerFactory.getLogger(TourGuideService.class);
@@ -52,10 +56,22 @@ public class TourGuideService {
 		addShutDownHook();
 	}
 
+	/**
+	 * Get the list of user rewards for a given user.
+	 *
+	 * @param user the user for whom to get rewards
+	 * @return a list of UserReward objects containing the user's rewards
+	 */
 	public List<UserReward> getUserRewards(User user) {
 		return user.getUserRewards();
 	}
 
+	/**
+	 * Get the current location of a user.
+	 *
+	 * @param user the user for whom to get the location
+	 * @return the VisitedLocation object containing the user's current location
+	 */
 	public VisitedLocation getUserLocation(User user) {
 		try	{
             return (user.getVisitedLocations().size() > 0) ? user.getLastVisitedLocation()
@@ -66,20 +82,41 @@ public class TourGuideService {
 		}
 	}
 
+	/**
+	 * Get a user by their username.
+	 *
+	 * @param userName the name of the user
+	 * @return the User object if found, null otherwise
+	 */
 	public User getUser(String userName) {
 		return internalUserMap.get(userName);
 	}
 
+	/**
+	 * Get all users in the system.
+	 *
+	 * @return a list of User objects representing all users
+	 */
 	public List<User> getAllUsers() {
 		return internalUserMap.values().stream().collect(Collectors.toList());
 	}
 
+	/**
+	 * Add a user to the internal user map if they do not already exist.
+	 *
+	 * @param user the user to add
+	 */
 	public void addUser(User user) {
 		if (!internalUserMap.containsKey(user.getUserName())) {
 			internalUserMap.put(user.getUserName(), user);
 		}
 	}
 
+	/* * Get trip deals for a user based on their preferences and cumulative reward points.
+	 *
+	 * @param user the user for whom to get trip deals
+	 * @return a list of providers offering trip deals
+	 */
 	public List<Provider> getTripDeals(User user) {
 		int cumulatativeRewardPoints = user.getUserRewards().stream().mapToInt(i -> i.getRewardPoints()).sum();
 		List<Provider> providers = tripPricer.getPrice(tripPricerApiKey, user.getUserId(),
@@ -89,6 +126,12 @@ public class TourGuideService {
 		return providers;
 	}
 
+	/**
+	 * Track the user's location asynchronously and calculate rewards.
+	 *
+	 * @param user the user whose location is to be tracked
+	 * @return a CompletableFuture containing the VisitedLocation object
+	 */
 	public CompletableFuture<VisitedLocation> trackUserLocationAsync(User user) {
 				return CompletableFuture
 				.supplyAsync(() -> {
@@ -103,6 +146,12 @@ public class TourGuideService {
 				});
 	}
 
+	/**
+	 * Get nearby attractions for a user based on their visited location.
+	 *
+	 * @param visitedLocation the VisitedLocation object containing the user's current location
+	 * @return a list of Attraction objects representing nearby attractions
+	 */
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
 		if (visitedLocation == null) {
 			logger.error("Visited location is null. Cannot get nearby attractions.");
