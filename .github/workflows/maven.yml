@@ -38,7 +38,7 @@ jobs:
       run: mvn install:install-file -Dfile=TourGuide/libs/TripPricer.jar -DgroupId=tripPricer -DartifactId=tripPricer -Dversion=1.0.0 -Dpackaging=jar
       
     - name: Build with Maven
-      run: mvn -B install --file TourGuide/pom.xml
+      run: mvn -B package --file TourGuide/pom.xml
 
   test:
 
