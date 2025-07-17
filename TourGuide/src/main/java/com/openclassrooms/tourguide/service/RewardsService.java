@@ -84,7 +84,11 @@ public class RewardsService {
 							.supplyAsync(() -> getRewardPoints(attraction, user), executor)
 							.thenAcceptAsync(rewardPoints -> {
 								user.addUserReward(new UserReward(visitedLocation, attraction, rewardPoints));
-							});
+							})
+							.exceptionally((it) -> {
+								logger.error("Error while calculating rewards", it);
+								return null;
+							});;
 					futures.add(future);
 				}
 			}
