@@ -71,8 +71,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Upload artifact
-      run: mkdir TourGuide/staging && cp TourGuide/target/*.jar TourGuide/staging
+    - run: mkdir TourGuide/staging && cp TourGuide/target/*.jar TourGuide/staging
     - uses: actions/upload-artifact@v4
       with:
         name: Package
