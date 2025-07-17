@@ -102,7 +102,7 @@ public class TestPerformance {
 
 		List<CompletableFuture<Void>> rewardsFutures = new ArrayList<>();
 		 allUsers.forEach(user -> {
-			 CompletableFuture<Void> rewardsFuture = rewardsService.calculateRewards(user);
+			 CompletableFuture<Void> rewardsFuture = rewardsService.calculateRewardsAsync(user);
 			 rewardsFutures.add(rewardsFuture);
 		 });
 		// Wait for all tracking to complete

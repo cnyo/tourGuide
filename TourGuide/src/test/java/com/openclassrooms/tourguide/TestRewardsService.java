@@ -57,7 +57,7 @@ public class TestRewardsService {
 		InternalTestHelper.setInternalUserNumber(1);
 		TourGuideService tourGuideService = new TourGuideService(gpsUtil, rewardsService);
 
-		rewardsService.calculateRewards(tourGuideService.getAllUsers().get(0)).get();
+		rewardsService.calculateRewardsAsync(tourGuideService.getAllUsers().get(0)).get();
 		List<UserReward> userRewards = tourGuideService.getUserRewards(tourGuideService.getAllUsers().get(0));
 		tourGuideService.tracker.stopTracking();
 
@@ -75,7 +75,7 @@ public class TestRewardsService {
 
 		User user = tourGuideService.getAllUsers().get(0);
 		VisitedLocation visitedLocation = tourGuideService.getUserLocation(user);
-		rewardsService.calculateRewards(user).get();
+		rewardsService.calculateRewardsAsync(user).get();
 		List<AttractionDistanceFromUser> attractionDistanceFromUser = rewardsService.getAttractionDistancesFromUser(visitedLocation);
 
 		assertEquals(5, attractionDistanceFromUser.size());

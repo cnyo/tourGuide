@@ -133,17 +133,17 @@ public class TourGuideService {
 	 * @return a CompletableFuture containing the VisitedLocation object
 	 */
 	public CompletableFuture<VisitedLocation> trackUserLocationAsync(User user) {
-				return CompletableFuture
-				.supplyAsync(() -> {
-					VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
-					user.addToVisitedLocations(visitedLocation);
-					rewardsService.calculateRewards(user).join();
-					return visitedLocation;
-				}, executor)
-				.exceptionally((it) -> {
-					logger.info("Error tracking user location for user: {}", user.getUserName(), it);
-					return null;
-				});
+		return CompletableFuture
+		.supplyAsync(() -> {
+			VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
+			user.addToVisitedLocations(visitedLocation);
+			rewardsService.calculateRewardsAsync(user).join();
+			return visitedLocation;
+		}, executor)
+		.exceptionally((it) -> {
+			logger.info("Error tracking user location for user: {}", user.getUserName(), it);
+			return null;
+		});
 	}
 
 	/**

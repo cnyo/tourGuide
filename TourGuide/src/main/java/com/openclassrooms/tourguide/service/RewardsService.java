@@ -70,7 +70,7 @@ public class RewardsService {
 	 * @param user the user for whom to calculate rewards
 	 * @return a CompletableFuture that completes when all rewards have been calculated
 	 */
-	public CompletableFuture<Void> calculateRewards(User user) {
+	public CompletableFuture<Void> calculateRewardsAsync(User user) {
 		CopyOnWriteArrayList<VisitedLocation> userLocations = new CopyOnWriteArrayList<>(user.getVisitedLocations());
 		List<Attraction> attractions = gpsUtil.getAttractions();
 		List<String> attractionRewarded = getAttractionNamesFromUserRewards(user);
